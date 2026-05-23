@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickXe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --orange: #ff8a3d;
+    --orange-bright: #ffb066;
+    --orange-deep: #d96a1f;
+    --purple: #9b4dff;
+    --purple-bright: #c08aff;
+    --purple-deep: #4a1e7a;
+    --yellow: #ffe066;
+    --pink: #ff4dc4;
+    --dark: #0d0716;
+    --darker: #06030c;
+    --mid: #1a0f2a;
+    --text: #e8d9ff;
+    --muted: #8a72b0;
+    --danger: #ff3366;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+  /* Subtle CRT vignette */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center,
+      transparent 50%, rgba(0,0,0,0.45) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ===== TOP BAR ===== */
+  #topbar {
+    height: 56px;
+    background: linear-gradient(90deg, #1a0033, #2a0a4a 50%, #1a0033);
+    border-bottom: 3px solid var(--orange);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 18px;
+    box-shadow: 0 0 24px rgba(255, 138, 61, 0.35);
+    position: relative;
+    z-index: 50;
+  }
+
+  #logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--orange);
+    text-shadow: 0 0 12px var(--orange), 0 0 28px var(--orange-deep);
+    animation: glitch 6s infinite;
+    cursor: default;
+  }
+  @keyframes glitch {
+    0%, 92%, 100% { transform: none; text-shadow: 0 0 12px var(--orange), 0 0 28px var(--orange-deep); }
+    93% { transform: translate(-2px, 0); text-shadow: 3px 0 var(--purple), -2px 0 var(--orange); }
+    94% { transform: translate(2px, 0); text-shadow: -3px 0 var(--yellow), 2px 0 var(--pink); }
+    95% { transform: none; }
+  }
+  #logo .x {
+    color: var(--purple);
+    text-shadow: 0 0 12px var(--purple), 0 0 28px var(--purple-bright);
+  }
+
+  #lib-tabs {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 38px;
+    align-items: center;
+    scrollbar-width: none;
+  }
+  #lib-tabs::-webkit-scrollbar { display: none; }
+
+  .lib-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--purple-deep);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    letter-spacing: 1px;
+    transition: all 0.1s;
+    position: relative;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lib-tab:hover {
+    border-color: var(--purple);
+    color: var(--text);
+  }
+  .lib-tab.active {
+    background: linear-gradient(180deg, var(--purple-deep), rgba(155,77,255,0.15));
+    border-color: var(--orange);
+    color: var(--orange-bright);
+    text-shadow: 0 0 8px var(--orange);
+  }
+  .lib-tab .close {
+    margin-left: 8px;
+    opacity: 0;
+    color: var(--danger);
+    transition: opacity 0.1s;
+  }
+  .lib-tab:hover .close { opacity: 1; }
+
+  #add-lib-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    background: var(--orange);
+    color: #1a0033;
+    border: 2px solid var(--orange-bright);
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    transition: all 0.1s;
+  }
+  #add-lib-btn:hover {
+    background: var(--orange-bright);
+    box-shadow: 0 0 12px var(--orange);
+  }
+
+  #search-box {
+    flex-shrink: 0;
+    width: 220px;
+    height: 32px;
+    background: #000;
+    border: 2px solid var(--purple);
+    color: var(--orange-bright);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 0 10px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #search-box::placeholder { color: var(--muted); }
+  #search-box:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 10px rgba(255,138,61,0.5);
+  }
+
+  /* ===== MARQUEE ===== */
+  #marquee-bar {
+    height: 24px;
+    background: var(--purple-deep);
+    color: var(--yellow);
+    border-bottom: 1px solid var(--orange);
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 49;
+  }
+  #marquee-inner {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 38s linear infinite;
+  }
+  #marquee-inner span { margin: 0 24px; }
+  #marquee-inner .hot { color: var(--orange); }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+
+  /* ===== MAIN ===== */
+  #main {
+    position: absolute;
+    top: 80px;       /* topbar + marquee */
+    left: 0;
+    right: 0;
+    bottom: 26px;    /* status bar */
+    overflow-y: auto;
+    padding: 18px 22px 40px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; background: #000; }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--purple), var(--orange));
+    border: 1px solid #000;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+
+  /* ===== EMPTY STATES ===== */
+  #empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: calc(100% - 40px);
+    text-align: center;
+    color: var(--muted);
+  }
+  #empty-state h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--orange);
+    text-shadow: 0 0 12px var(--orange);
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  #empty-state p { font-size: 18px; margin-bottom: 18px; max-width: 480px; line-height: 1.4; }
+  #empty-state .big-add {
+    padding: 14px 28px;
+    background: var(--orange);
+    border: 2px solid var(--orange-bright);
+    color: #1a0033;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  #empty-state .big-add:hover {
+    background: var(--orange-bright);
+    box-shadow: 0 0 22px var(--orange);
+    transform: translateY(-1px);
+  }
+
+  /* ===== GRID ===== */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+  }
+
+  .game-card {
+    background: linear-gradient(180deg, var(--mid), #0e0518);
+    border: 2px solid var(--purple-deep);
+    padding: 10px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: default;
+    position: relative;
+    transition: all 0.12s;
+  }
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, transparent 30%, var(--orange) 50%, transparent 70%);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.2s;
+  }
+  .game-card:hover {
+    border-color: var(--orange);
+    box-shadow: 0 0 20px rgba(255,138,61,0.35),
+                inset 0 0 24px rgba(155,77,255,0.15);
+    transform: translateY(-2px);
+  }
+  .game-card .corner {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-color: var(--orange);
+    border-style: solid;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .game-card:hover .corner { opacity: 1; }
+  .corner.tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+  .corner.tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
+  .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
+  .corner.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+
+  .game-name {
+    font-family: 'VT323', monospace;
+    font-size: 19px;
+    line-height: 1.1;
+    color: var(--orange-bright);
+    text-align: center;
+    height: 44px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-shadow: 0 0 8px rgba(255,138,61,0.5);
+    letter-spacing: 0.5px;
+  }
+  .game-card:hover .game-name {
+    color: var(--yellow);
+    text-shadow: 0 0 10px var(--yellow);
+  }
+
+  .cover-wrap {
+    position: relative;
+    width: 100%;
+    /* 4:5 aspect ratio */
+    padding-top: 125%;
+    background: #000;
+    overflow: hidden;
+    border: 1px solid var(--purple-deep);
+  }
+  .cover-wrap img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .cover-placeholder {
+    position: absolute;
+    inset: 0;
+    border: 2px dashed var(--purple);
+    margin: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--muted);
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .cover-placeholder:hover {
+    border-color: var(--orange);
+    color: var(--orange-bright);
+    background: rgba(255,138,61,0.05);
+  }
+  .cover-placeholder .ico {
+    font-size: 28px;
+    opacity: 0.7;
+  }
+  .cover-placeholder .lbl {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .open-btn {
+    height: 30px;
+    background: var(--purple-deep);
+    border: 2px solid var(--purple);
+    color: var(--orange);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .open-btn:hover {
+    background: var(--orange);
+    border-color: var(--yellow);
+    color: #1a0033;
+    box-shadow: 0 0 12px var(--orange);
+  }
+  .open-btn:active { transform: translateY(1px); }
+
+  /* ===== CONTEXT MENU ===== */
+  #ctx-menu {
+    position: fixed;
+    background: #0a0316;
+    border: 2px solid var(--orange);
+    box-shadow: 0 0 24px rgba(255,138,61,0.4);
+    min-width: 200px;
+    z-index: 200;
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    display: none;
+  }
+  #ctx-menu.show { display: block; }
+  #ctx-menu .item {
+    padding: 7px 14px;
+    cursor: pointer;
+    color: var(--text);
+    border-left: 3px solid transparent;
+    transition: all 0.08s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #ctx-menu .item:hover {
+    background: rgba(255,138,61,0.15);
+    border-left-color: var(--orange);
+    color: var(--orange-bright);
+  }
+  #ctx-menu .item.danger { color: var(--danger); }
+  #ctx-menu .item.danger:hover {
+    background: rgba(255,51,102,0.18);
+    border-left-color: var(--danger);
+  }
+  #ctx-menu .sep {
+    height: 1px;
+    background: var(--purple-deep);
+    margin: 4px 0;
+  }
+  #ctx-menu .icon { width: 16px; text-align: center; opacity: 0.8; }
+
+  /* ===== MODAL ===== */
+  #modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+  }
+  #modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--darker);
+    border: 3px solid var(--orange);
+    box-shadow: 0 0 40px rgba(255,138,61,0.45);
+    padding: 24px 28px;
+    min-width: 380px;
+    max-width: 500px;
+    position: relative;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .modal .corner {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--purple);
+    border-style: solid;
+  }
+  .modal .corner.tl { top: -3px; left: -3px; border-width: 3px 0 0 3px; }
+  .modal .corner.tr { top: -3px; right: -3px; border-width: 3px 3px 0 0; }
+  .modal .corner.bl { bottom: -3px; left: -3px; border-width: 0 0 3px 3px; }
+  .modal .corner.br { bottom: -3px; right: -3px; border-width: 0 3px 3px 0; }
+
+  .modal h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--orange);
+    text-shadow: 0 0 8px var(--orange);
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+  .modal h2.danger { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
+  .modal p {
+    font-size: 17px;
+    line-height: 1.45;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .modal p .target {
+    color: var(--yellow);
+    word-break: break-all;
+    display: block;
+    margin-top: 4px;
+    font-size: 15px;
+    border-left: 2px solid var(--orange);
+    padding-left: 8px;
+  }
+  .modal input.text {
+    width: 100%;
+    height: 36px;
+    background: #000;
+    border: 2px solid var(--purple);
+    color: var(--orange-bright);
+    font-family: 'VT323', monospace;
+    font-size: 19px;
+    padding: 0 10px;
+    outline: none;
+  }
+  .modal input.text:focus { border-color: var(--orange); }
+  .modal .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+  .modal button {
+    padding: 9px 18px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    border: 2px solid;
+    background: transparent;
+    transition: all 0.1s;
+  }
+  .modal button.primary {
+    background: var(--orange);
+    border-color: var(--orange-bright);
+    color: #1a0033;
+  }
+  .modal button.primary:hover {
+    background: var(--orange-bright);
+    box-shadow: 0 0 14px var(--orange);
+  }
+  .modal button.danger {
+    background: var(--danger);
+    border-color: #ff6688;
+    color: #fff;
+  }
+  .modal button.danger:hover {
+    background: #ff6688;
+    box-shadow: 0 0 14px var(--danger);
+  }
+  .modal button.danger:disabled {
+    background: #4a1525;
+    border-color: #4a1525;
+    color: #8a5a6a;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .modal button.ghost {
+    border-color: var(--purple);
+    color: var(--muted);
+  }
+  .modal button.ghost:hover {
+    color: var(--text);
+    border-color: var(--orange);
+  }
+
+  /* ===== STATUS BAR ===== */
+  #statusbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 26px;
+    background: #000;
+    border-top: 2px solid var(--purple);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 14px;
+    color: var(--muted);
+    gap: 14px;
+    z-index: 49;
+  }
+  #statusbar .count { color: var(--orange); }
+  #statusbar .right { margin-left: auto; }
+  #statusbar .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 6px var(--orange);
+    margin-right: 6px;
+    animation: blink 1.2s steps(2) infinite;
+  }
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.2; }
+  }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed;
+    top: 90px; right: 24px;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .toast {
+    background: #1a0033;
+    border: 2px solid var(--orange);
+    color: var(--orange-bright);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 0 16px rgba(255,138,61,0.4);
+    animation: toastIn 0.25s ease, toastOut 0.3s ease 2.5s forwards;
+  }
+  .toast.err {
+    border-color: var(--danger);
+    color: var(--danger);
+    box-shadow: 0 0 16px rgba(255,51,102,0.4);
+  }
+  @keyframes toastIn {
+    from { transform: translateX(40px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes toastOut {
+    to { transform: translateX(40px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="logo">QUICK<span class="x">XE</span></div>
+  <div id="lib-tabs"></div>
+  <button id="add-lib-btn" title="Add a new library folder">+ ADD FOLDER</button>
+  <input id="search-box" type="text" placeholder="search games..." />
+</div>
+
+<div id="marquee-bar">
+  <div id="marquee-inner">
+    <span class="hot">★ QUICKXE v2 ★</span>
+    <span>right-click a game for more options</span>
+    <span class="hot">◆</span>
+    <span>add a cover to make your library shine</span>
+    <span class="hot">◆</span>
+    <span>each tab = one library folder</span>
+    <span class="hot">◆</span>
+    <span>names auto-cleaned from folder names</span>
+    <span class="hot">◆</span>
+    <span>your zone, your games, your rules</span>
+    <span class="hot">★</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="grid"></div>
+  <div id="empty-state" style="display:none">
+    <h2>NO ZONE LOADED</h2>
+    <p>Add a folder full of game folders (GOG, RPG Maker exports, Steamunlocked, anything with .exe files inside).</p>
+    <button class="big-add" id="empty-add-btn">+ ADD A FOLDER</button>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span class="dot"></span>
+  <span id="status-text">ready</span>
+  <span class="right" id="lib-path"></span>
+</div>
+
+<!-- Context menu -->
+<div id="ctx-menu">
+  <div class="item" data-act="launch"><span class="icon">▶</span> Launch</div>
+  <div class="sep"></div>
+  <div class="item" data-act="cover"><span class="icon">▣</span> Set cover...</div>
+  <div class="item" data-act="cover-remove"><span class="icon">✕</span> Remove cover</div>
+  <div class="sep"></div>
+  <div class="item" data-act="explorer"><span class="icon">📁</span> Open folder in Explorer</div>
+  <div class="sep"></div>
+  <div class="item danger" data-act="delete"><span class="icon">🗑</span> Delete folder from disk</div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toast"></div>
+
+<!-- QWebChannel is provided by Qt at this URL when running inside QWebEngineView -->
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script>
+  // ===== STATE =====
+  const state = {
+    libraries: [],
+    activeLibraryId: null,
+    games: [],
+    filtered: [],
+    search: '',
+    ctxGame: null,
+    bridge: null,   // set when QWebChannel connects
+  };
+
+  // ===== UTIL =====
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function toast(msg, isErr = false) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (isErr ? ' err' : '');
+    el.textContent = msg;
+    $('#toast').appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  function setStatus(text, libPath = '') {
+    $('#status-text').textContent = text;
+    $('#lib-path').textContent = libPath;
+  }
+
+  /**
+   * Call a Python bridge method.
+   * Python returns a JSON string for all data-returning methods.
+   * The QWebChannel idiom is callback-based, but we wrap it as a Promise.
+   *
+   * Args are passed through; objects are JSON-stringified before sending.
+   * Result is JSON-parsed before resolving.
+   */
+  function api(method, ...args) {
+    return new Promise((resolve, reject) => {
+      if (!state.bridge) {
+        reject(new Error('bridge not ready'));
+        return;
+      }
+      const fn = state.bridge[method];
+      if (typeof fn !== 'function') {
+        reject(new Error('no method: ' + method));
+        return;
+      }
+      // Stringify any object/array args (Python expects JSON strings for
+      // multi-arg methods, see Bridge.* slots)
+      const sentArgs = args.map(a =>
+        (typeof a === 'object' && a !== null) ? JSON.stringify(a) : a
+      );
+      // QWebChannel callback comes as last arg
+      try {
+        fn.call(state.bridge, ...sentArgs, (result) => {
+          let parsed = result;
+          if (typeof result === 'string') {
+            try { parsed = JSON.parse(result); } catch (_) { /* keep string */ }
+          }
+          resolve(parsed);
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  // ===== LIBS =====
+  async function loadLibs() {
+    const s = await api('get_state');
+    state.libraries = s.libraries || [];
+    state.activeLibraryId = s.active_library;
+    renderLibTabs();
+    await loadGames();
+  }
+
+  function renderLibTabs() {
+    const tabs = $('#lib-tabs');
+    tabs.innerHTML = '';
+    state.libraries.forEach(lib => {
+      const tab = document.createElement('div');
+      tab.className = 'lib-tab' + (lib.id === state.activeLibraryId ? ' active' : '');
+      tab.dataset.id = lib.id;
+      tab.innerHTML = `${esc(lib.name)}<span class="close" data-act="close">×</span>`;
+      tab.addEventListener('click', (e) => {
+        if (e.target.dataset.act === 'close') {
+          e.stopPropagation();
+          confirmRemoveLib(lib);
+        } else {
+          activateLib(lib.id);
+        }
+      });
+      tab.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        renameLib(lib);
+      });
+      tab.title = lib.path + ' (double-click to rename)';
+      tabs.appendChild(tab);
+    });
+  }
+
+  async function activateLib(id) {
+    if (state.activeLibraryId === id) return;
+    await api('set_active_library', id);
+    state.activeLibraryId = id;
+    renderLibTabs();
+    await loadGames();
+  }
+
+  async function addLib() {
+    setStatus('choose a folder...');
+    const res = await api('add_library');
+    if (res.ok) {
+      if (res.duplicate) {
+        toast('Already added - switching to it');
+      } else {
+        toast(`Added: ${res.library.name}`);
+      }
+      await loadLibs();
+    } else if (res.error === 'cancelled') {
+      setStatus('ready');
+    } else {
+      toast('Failed: ' + res.error, true);
+      setStatus('ready');
+    }
+  }
+
+  function confirmRemoveLib(lib) {
+    showModal({
+      title: 'REMOVE LIBRARY?',
+      body: `
+        <p>Remove this library tab? Your game files won't be touched - just this shortcut to them.
+        <span class="target">${esc(lib.name)} - ${esc(lib.path)}</span></p>
+      `,
+      buttons: [
+        { label: 'Cancel', className: 'ghost' },
+        { label: 'Remove', className: 'danger', action: async () => {
+          await api('remove_library', lib.id);
+          closeModal();
+          await loadLibs();
+          toast('Library removed');
+        }}
+      ]
+    });
+  }
+
+  function renameLib(lib) {
+    showModal({
+      title: 'RENAME LIBRARY',
+      body: `
+        <p>What do you want to call this library?</p>
+        <input class="text" id="rename-input" value="${esc(lib.name)}" maxlength="40" />
+      `,
+      onShow: () => {
+        const inp = $('#rename-input');
+        inp.focus();
+        inp.select();
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') doRename();
+          if (e.key === 'Escape') closeModal();
+        });
+      },
+      buttons: [
+        { label: 'Cancel', className: 'ghost' },
+        { label: 'Save', className: 'primary', action: doRename }
+      ]
+    });
+    async function doRename() {
+      const val = $('#rename-input').value.trim();
+      if (!val) return;
+      await api('rename_library', { id: lib.id, name: val });
+      closeModal();
+      await loadLibs();
+      toast('Renamed');
+    }
+  }
+
+  // ===== GAMES =====
+  async function loadGames() {
+    if (!state.activeLibraryId) {
+      state.games = [];
+      renderGrid();
+      setStatus('no library', '');
+      return;
+    }
+    setStatus('scanning...');
+    const res = await api('scan_active');
+    state.games = res.games || [];
+    applyFilter();
+    setStatus(
+      `${state.games.length} game${state.games.length === 1 ? '' : 's'}`,
+      res.library ? res.library.path : ''
+    );
+  }
+
+  function applyFilter() {
+    const q = state.search.trim().toLowerCase();
+    state.filtered = q
+      ? state.games.filter(g => g.name.toLowerCase().includes(q))
+      : state.games;
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = $('#grid');
+    const empty = $('#empty-state');
+    if (state.libraries.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = '';
+    if (state.filtered.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:18px;">
+        ${state.search ? 'no matches for "' + esc(state.search) + '"' : 'no games found in this folder yet'}
+      </div>`;
+      return;
+    }
+    state.filtered.forEach(g => grid.appendChild(makeCard(g)));
+  }
+
+  function makeCard(g) {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.dataset.id = g.id;
+
+    const coverHTML = g.cover_url
+      ? `<img src="${esc(g.cover_url)}?t=${Date.now()}" alt="" />`
+      : `<div class="cover-placeholder" data-act="set-cover">
+           <div class="ico">▣</div>
+           <div class="lbl">+ ADD<br>COVER</div>
+         </div>`;
+
+    card.innerHTML = `
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="game-name" title="${esc(g.name)}">${esc(g.name)}</div>
+      <div class="cover-wrap">${coverHTML}</div>
+      <button class="open-btn" data-act="launch">▶ OPEN</button>
+    `;
+
+    card.addEventListener('click', (e) => {
+      const act = e.target.dataset.act
+        || (e.target.closest('[data-act]') ? e.target.closest('[data-act]').dataset.act : null);
+      if (act === 'launch') launchGame(g);
+      else if (act === 'set-cover') setCover(g);
+    });
+
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showCtxMenu(e.clientX, e.clientY, g);
+    });
+
+    return card;
+  }
+
+  async function launchGame(g) {
+    setStatus('launching ' + g.name + '...');
+    const res = await api('launch_game', g.exe_path);
+    if (res.ok) {
+      toast('▶ ' + g.name);
+      setStatus(`launched: ${g.name}`, '');
+      setTimeout(() => loadGames(), 800);
+    } else {
+      toast('Failed: ' + res.error, true);
+      setStatus('ready');
+    }
+  }
+
+  async function setCover(g) {
+    const res = await api('set_cover', g.id);
+    if (res.ok) {
+      g.cover_url = res.cover_url;
+      renderGrid();
+      toast('Cover set');
+    } else if (res.error !== 'cancelled') {
+      toast('Failed: ' + res.error, true);
+    }
+  }
+
+  async function removeCover(g) {
+    await api('remove_cover', g.id);
+    g.cover_url = null;
+    renderGrid();
+    toast('Cover removed');
+  }
+
+  async function openInExplorer(g) {
+    const res = await api('open_in_explorer', g.folder_path);
+    if (!res.ok) toast('Failed: ' + res.error, true);
+  }
+
+  function confirmDelete(g) {
+    showModal({
+      title: '⚠ DELETE FOLDER',
+      titleClass: 'danger',
+      body: `
+        <p><b style="color:var(--danger)">This will permanently delete the entire folder from your disk.</b> The files won't go to the Recycle Bin. There is no undo.
+        <span class="target">${esc(g.folder_path)}</span></p>
+        <p>Type <b style="color:var(--orange)">DELETE</b> to confirm:</p>
+        <input class="text" id="del-input" placeholder="type DELETE" autocomplete="off" />
+      `,
+      onShow: () => {
+        const inp = $('#del-input');
+        const btn = document.querySelector('#modal button.danger');
+        btn.disabled = true;
+        inp.focus();
+        inp.addEventListener('input', () => {
+          btn.disabled = inp.value !== 'DELETE';
+        });
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && inp.value === 'DELETE') doDelete();
+          if (e.key === 'Escape') closeModal();
+        });
+      },
+      buttons: [
+        { label: 'Cancel', className: 'ghost' },
+        { label: 'Delete forever', className: 'danger', action: doDelete }
+      ]
+    });
+    async function doDelete() {
+      const val = $('#del-input').value;
+      if (val !== 'DELETE') return;
+      closeModal();
+      setStatus('deleting...');
+      const res = await api('delete_game_folder', {
+        folder_path: g.folder_path,
+        game_id: g.id,
+        confirm: 'DELETE',
+      });
+      if (res.ok) {
+        toast('Deleted: ' + g.name);
+        await loadGames();
+      } else {
+        toast('Failed: ' + res.error, true);
+        setStatus('ready');
+      }
+    }
+  }
+
+  // ===== CONTEXT MENU =====
+  function showCtxMenu(x, y, game) {
+    state.ctxGame = game;
+    const menu = $('#ctx-menu');
+    menu.classList.add('show');
+    const rm = menu.querySelector('[data-act="cover-remove"]');
+    rm.style.display = game.cover_url ? '' : 'none';
+
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    const px = Math.min(x, window.innerWidth - mw - 4);
+    const py = Math.min(y, window.innerHeight - mh - 4);
+    menu.style.left = px + 'px';
+    menu.style.top = py + 'px';
+  }
+
+  function hideCtxMenu() {
+    $('#ctx-menu').classList.remove('show');
+    state.ctxGame = null;
+  }
+
+  $('#ctx-menu').addEventListener('click', async (e) => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    const act = item.dataset.act;
+    const g = state.ctxGame;
+    hideCtxMenu();
+    if (!g) return;
+    if (act === 'launch') launchGame(g);
+    else if (act === 'cover') setCover(g);
+    else if (act === 'cover-remove') removeCover(g);
+    else if (act === 'explorer') openInExplorer(g);
+    else if (act === 'delete') confirmDelete(g);
+  });
+  document.addEventListener('click', hideCtxMenu);
+  document.addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('.game-card')) hideCtxMenu();
+  });
+
+  // ===== MODAL =====
+  function showModal({ title, titleClass = '', body, buttons = [], onShow }) {
+    const m = $('#modal-body');
+    m.innerHTML = `
+      <h2 class="${titleClass}">${esc(title)}</h2>
+      <div>${body}</div>
+      <div class="actions"></div>
+    `;
+    const actions = m.querySelector('.actions');
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = b.className || '';
+      btn.textContent = b.label;
+      btn.addEventListener('click', () => {
+        if (b.action) b.action();
+        else closeModal();
+      });
+      actions.appendChild(btn);
+    });
+    $('#modal-overlay').classList.add('show');
+    if (onShow) onShow();
+  }
+
+  function closeModal() {
+    $('#modal-overlay').classList.remove('show');
+    $('#modal-body').innerHTML = '';
+  }
+
+  $('#modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideCtxMenu();
+      closeModal();
+    }
+  });
+
+  // ===== EVENTS =====
+  $('#add-lib-btn').addEventListener('click', addLib);
+  $('#empty-add-btn').addEventListener('click', addLib);
+  $('#search-box').addEventListener('input', (e) => {
+    state.search = e.target.value;
+    applyFilter();
+  });
+
+  // Disable default browser menu globally (we have our own)
+  window.addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('.game-card') && !e.target.matches('input,textarea')) {
+      e.preventDefault();
+    }
+  });
+
+  // ===== STARTUP =====
+  // Wait for QWebChannel to be available and connect.
+  function initBridge() {
+    if (typeof QWebChannel === 'undefined' || !window.qt || !window.qt.webChannelTransport) {
+      // Try again shortly - qt injects this after page load
+      setTimeout(initBridge, 60);
+      return;
+    }
+    new QWebChannel(window.qt.webChannelTransport, function (channel) {
+      state.bridge = channel.objects.quickxe;
+      loadLibs();
+    });
+  }
+  initBridge();
+</script>
+</body>
+</html>
