@@ -1,8 +1,6 @@
-# QuickXe 
+# QuickXe  ![QuickXe icon](quickxe.png)
 
 A retro-styled game launcher for fan games and the like.
-
-![QuickXe icon](quickxe.png)
 
 ![alt text](image.png)
 
