@@ -1,4 +1,4 @@
-# QuickXe  ![QuickXe icon](quickxe.png)
+# QuickXe  <img src="quickxe.png" width="100" height="100">
 
 A retro-styled game launcher for fan games and the like.
 
