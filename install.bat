@@ -33,10 +33,10 @@ if errorlevel 1 (
 )
 
 echo.
-echo  [2/4] Building QuickXe.exe (this takes ~1-2 minutes)...
+echo  [2/4] Building QuickXe (this takes ~1-2 minutes)...
 echo.
 python -m PyInstaller ^
-    --onefile ^
+    --onedir ^
     --windowed ^
     --name QuickXe ^
     --icon quickxe.ico ^
@@ -52,7 +52,7 @@ python -m PyInstaller ^
     --workpath build ^
     --noconfirm ^
     quickxe.py
-if not exist "dist\QuickXe.exe" (
+if not exist "dist\QuickXe\QuickXe.exe" (
     echo.
     echo  [X] Build failed. See errors above.
     pause
@@ -78,9 +78,9 @@ echo    Done! QuickXe is installed.
 echo  ============================================
 echo.
 echo    Launch it from the QuickXe icon on your desktop,
-echo    or from:  %CD%\dist\QuickXe.exe
+echo    or from:  %CD%\dist\QuickXe\QuickXe.exe
 echo.
-echo    Note: the exe is ~150MB because Qt is bundled.
+echo    Startup is now ~1-2 seconds (no more onefile unpacking).
 echo    To remove it later, run uninstall.bat
 echo.
 pause

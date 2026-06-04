@@ -9,9 +9,10 @@ from pathlib import Path
 
 OUT_DIR = Path(__file__).parent
 SIZE = 512
-SCALE = 4  
+SCALE = 4  # supersample for smooth edges
 W = SIZE * SCALE
 
+# Palette
 PURPLE_DARK = (75, 30, 130, 255)
 PURPLE_MID = (139, 60, 220, 255)
 PURPLE_LIGHT = (180, 110, 255, 255)
@@ -51,7 +52,7 @@ def heart_polygon(cx, cy, size):
     """
     import math
     pts = []
-
+    # Parametric heart curve: x = 16 sin^3(t), y = -(13 cos t - 5 cos 2t - 2 cos 3t - cos 4t)
     steps = 200
     for i in range(steps):
         t = 2 * math.pi * i / steps
@@ -63,13 +64,13 @@ def heart_polygon(cx, cy, size):
 
 
 def render_icon():
-
+    # Transparent canvas at supersample resolution
     img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
 
-
+    # ---------- Shackle (the arched metal loop on top) ----------
     shackle_layer = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shackle_layer)
-
+    # outer shackle
     sh_left = W * 0.28
     sh_right = W * 0.72
     sh_top = W * 0.08
@@ -77,7 +78,7 @@ def render_icon():
     sh_thickness = int(W * 0.085)
     sd.arc([sh_left, sh_top, sh_right, sh_bottom],
            start=180, end=360, fill=PURPLE_LIGHT, width=sh_thickness)
-
+    # legs going down into the body
     leg_w = sh_thickness
     body_top = int(W * 0.42)
     sd.rectangle([sh_left, (sh_top + sh_bottom) / 2,
@@ -85,27 +86,28 @@ def render_icon():
     sd.rectangle([sh_right - leg_w, (sh_top + sh_bottom) / 2,
                   sh_right, body_top], fill=PURPLE_LIGHT)
 
-
+    # Darker shackle highlight stroke
     sd.arc([sh_left + leg_w * 0.25, sh_top + leg_w * 0.25,
             sh_right - leg_w * 0.25, sh_bottom - leg_w * 0.25],
            start=180, end=360, fill=PURPLE_MID, width=int(leg_w * 0.35))
 
-
+    # composite shackle drop-shadow
     shadow = shackle_layer.copy()
     shadow_data = shadow.split()
-
+    # make shadow blackish
     shadow = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     sm = Image.new("L", (W, W), 0)
     sm.paste(shadow_data[3])
     shadow.putalpha(sm)
-
+    # apply blur
     shadow = shadow.filter(ImageFilter.GaussianBlur(radius=int(W * 0.012)))
-
+    # tint to dark purple
     sh_tint = Image.new("RGBA", (W, W), SHADOW)
     sh_tint.putalpha(shadow.split()[3])
     img = Image.alpha_composite(img, sh_tint)
     img = Image.alpha_composite(img, shackle_layer)
 
+    # ---------- Lock body (the rounded rectangle) ----------
     body_layer = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     bd = ImageDraw.Draw(body_layer)
     bx1 = int(W * 0.14)
@@ -116,16 +118,16 @@ def render_icon():
     bd.rounded_rectangle([bx1, by1, bx2, by2], radius=radius,
                          fill=PURPLE_DARK)
 
-
+    # Add gradient overlay on the body
     grad = make_gradient((bx2 - bx1, by2 - by1), PURPLE_MID, PURPLE_DARK, vertical=True)
- 
+    # mask to rounded rect
     mask = Image.new("L", (bx2 - bx1, by2 - by1), 0)
     md = ImageDraw.Draw(mask)
     md.rounded_rectangle([0, 0, bx2 - bx1, by2 - by1], radius=radius, fill=255)
     grad.putalpha(mask)
     body_layer.alpha_composite(grad, (bx1, by1))
 
-
+    # body drop shadow
     bsh = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     bsh_d = ImageDraw.Draw(bsh)
     bsh_d.rounded_rectangle([bx1, by1 + int(W * 0.01), bx2, by2 + int(W * 0.015)],
@@ -134,7 +136,7 @@ def render_icon():
     img = Image.alpha_composite(img, bsh)
     img = Image.alpha_composite(img, body_layer)
 
-
+    # ---------- Highlight strip on top of body ----------
     hl = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     hd = ImageDraw.Draw(hl)
     hd.rounded_rectangle(
@@ -146,20 +148,24 @@ def render_icon():
     hl = hl.filter(ImageFilter.GaussianBlur(radius=int(W * 0.006)))
     img = Image.alpha_composite(img, hl)
 
+    # ---------- Heart-shaped keyhole (orange) ----------
     heart_layer = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     hd = ImageDraw.Draw(heart_layer)
     cx = W / 2
     cy = W * 0.62
     heart_size = W * 0.16
 
+    # Glow behind heart
     glow = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
     gd.polygon(heart_polygon(cx, cy, heart_size * 1.25), fill=(255, 138, 61, 90))
     glow = glow.filter(ImageFilter.GaussianBlur(radius=int(W * 0.025)))
     img = Image.alpha_composite(img, glow)
 
+    # main heart fill
     hd.polygon(heart_polygon(cx, cy, heart_size), fill=ORANGE)
 
+    # heart inner gradient (lighter top-left)
     inner = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     id_ = ImageDraw.Draw(inner)
     id_.polygon(heart_polygon(cx - heart_size * 0.05, cy - heart_size * 0.1,
@@ -168,12 +174,14 @@ def render_icon():
     inner = inner.filter(ImageFilter.GaussianBlur(radius=int(W * 0.008)))
     heart_layer = Image.alpha_composite(heart_layer, inner)
 
+    # heart deep edge
     edge = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     ed = ImageDraw.Draw(edge)
     ed.polygon(heart_polygon(cx + heart_size * 0.08, cy + heart_size * 0.1,
                              heart_size * 0.7),
                fill=(0, 0, 0, 60))
     edge = edge.filter(ImageFilter.GaussianBlur(radius=int(W * 0.01)))
+    # only where heart exists
     heart_mask = Image.new("L", (W, W), 0)
     hm = ImageDraw.Draw(heart_mask)
     hm.polygon(heart_polygon(cx, cy, heart_size), fill=255)
@@ -185,7 +193,7 @@ def render_icon():
     img = Image.alpha_composite(img, heart_layer)
     img = Image.alpha_composite(img, edge)
 
-
+    # Tiny heart highlight (specular)
     spec = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     sd = ImageDraw.Draw(spec)
     sd.ellipse([cx - heart_size * 0.55, cy - heart_size * 0.7,
@@ -198,6 +206,7 @@ def render_icon():
     spec.putalpha(final_spec_alpha)
     img = Image.alpha_composite(img, spec)
 
+    # ---------- Downsample to final size ----------
     final = img.resize((SIZE, SIZE), Image.LANCZOS)
     return final
 
@@ -208,6 +217,7 @@ def main():
     icon.save(png_path)
     print(f"Saved {png_path}")
 
+    # Save .ico with multiple sizes
     ico_path = OUT_DIR / "quickxe.ico"
     sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
     icon.save(ico_path, format="ICO", sizes=sizes)

@@ -176,6 +176,33 @@
     box-shadow: 0 0 10px rgba(255,138,61,0.5);
   }
 
+  #refresh-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 32px;
+    background: var(--purple-deep);
+    color: var(--orange-bright);
+    border: 2px solid var(--purple);
+    cursor: pointer;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    transition: all 0.1s;
+    padding: 0;
+    line-height: 1;
+  }
+  #refresh-btn:hover {
+    background: var(--purple);
+    color: var(--yellow);
+    box-shadow: 0 0 12px var(--purple-bright);
+  }
+  #refresh-btn.spinning {
+    animation: spin 0.8s linear;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   /* ===== MARQUEE ===== */
   #marquee-bar {
     height: 24px;
@@ -626,6 +653,7 @@
   <div id="logo">QUICK<span class="x">XE</span></div>
   <div id="lib-tabs"></div>
   <button id="add-lib-btn" title="Add a new library folder">+ ADD FOLDER</button>
+  <button id="refresh-btn" title="Rescan the current library for new games">⟳</button>
   <input id="search-box" type="text" placeholder="search games..." />
 </div>
 
@@ -791,10 +819,15 @@
 
   async function activateLib(id) {
     if (state.activeLibraryId === id) return;
-    await api('set_active_library', id);
     state.activeLibraryId = id;
     renderLibTabs();
-    await loadGames();
+    state.games = [];
+    state.filtered = [];
+    const grid = $('#grid');
+    grid.innerHTML = '';
+    setStatus('loading...');
+    await api('set_active_library', id);
+    await loadGames(false);
   }
 
   async function addLib() {
@@ -866,15 +899,15 @@
   }
 
   // ===== GAMES =====
-  async function loadGames() {
+  async function loadGames(force) {
     if (!state.activeLibraryId) {
       state.games = [];
       renderGrid();
       setStatus('no library', '');
       return;
     }
-    setStatus('scanning...');
-    const res = await api('scan_active');
+    setStatus(force ? 'rescanning...' : 'loading...');
+    const res = await api(force ? 'rescan_active' : 'scan_active');
     state.games = res.games || [];
     applyFilter();
     setStatus(
@@ -907,7 +940,9 @@
       </div>`;
       return;
     }
-    state.filtered.forEach(g => grid.appendChild(makeCard(g)));
+    const frag = document.createDocumentFragment();
+    state.filtered.forEach(g => frag.appendChild(makeCard(g)));
+    grid.appendChild(frag);
   }
 
   function makeCard(g) {
@@ -1108,6 +1143,13 @@
   // ===== EVENTS =====
   $('#add-lib-btn').addEventListener('click', addLib);
   $('#empty-add-btn').addEventListener('click', addLib);
+  $('#refresh-btn').addEventListener('click', async () => {
+    const btn = $('#refresh-btn');
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 800);
+    await loadGames(true);
+    toast('Library refreshed');
+  });
   $('#search-box').addEventListener('input', (e) => {
     state.search = e.target.value;
     applyFilter();
