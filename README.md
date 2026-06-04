@@ -1,10 +1,8 @@
-# QuickXe v2 (Qt edition)
+# QuickXe  <img src="quickxe.png" width="100" height="100">
 
-A retro-styled game launcher in orange and purple, inspired by Hypnozone.
-Each library is one tab. Each game is a tile with a 4:5 cover, a cleaned-up
-name, and an OPEN button.
+A retro-styled game launcher for fan games and the like.
 
-![QuickXe icon](quickxe.png)
+![alt text](image.png)
 
 ## Install
 
@@ -27,10 +25,8 @@ delete the folder afterward to wipe everything.
 
 ## Features
 
-- **Hypnozone-style UI** with scanlines, VT323/Press Start 2P fonts,
-  glitching logo, marquee, and CRT vignette.
 - **Library tabs** along the top - add as many folders as you want
-  (GOG / RPG Maker / Steamunlocked / etc.). Click to switch, double-click
+  (GOG / RPG Maker / itch / etc.). Click to switch, double-click
   to rename, hover and click the `×` to remove.
 - **Auto-cleaned names** - `Stardew_Valley_v1.6.9-GOG` becomes
   `Stardew Valley`. Scene tags, version numbers, repack labels stripped.
@@ -54,13 +50,6 @@ For each library folder, QuickXe looks at every direct subfolder:
 
 The active library and cover assignments are saved to
 `%APPDATA%\QuickXe\config.json`.
-
-## Run without building (dev mode)
-
-```
-python -m pip install PySide6 pillow
-python quickxe.py
-```
 
 ## Tech notes
 
